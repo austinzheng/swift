@@ -1194,6 +1194,85 @@ MirrorReturn swift::swift_reflectAny(OpaqueValue *value, const Metadata *T) {
   return MirrorReturn(result);
 }
 
+
+// AZ: TODO
+SWIFT_RUNTIME_EXPORT
+extern "C"
+intptr_t swift_getNominalTypeFieldCount(const Metadata *T) {
+  auto kind = T->getKind();
+  auto descriptor = T->getNominalTypeDescriptor();
+  switch (kind) {
+    case MetadataKind::Struct: {
+      intptr_t count = descriptor->Struct.NumFields;
+      return count;
+    }
+    case MetadataKind::Enum: {
+      intptr_t count = descriptor->Enum.getNumCases();
+      return count;
+    }
+    case MetadataKind::Class: {
+      intptr_t count = descriptor->Class.NumFields;
+      return count;
+    }
+    default:
+      return 0;
+  }
+}
+
+SWIFT_RUNTIME_EXPORT
+extern "C"
+intptr_t swift_getNominalTypeKind(const Metadata *T) {
+  auto kind = T->getKind();
+  switch (kind) {
+    case MetadataKind::Struct: {
+      return 1;
+    }
+    case MetadataKind::Enum: {
+      return 2;
+    }
+    case MetadataKind::Class: {
+      return 3;
+    }
+    default:
+      return 0;
+  }
+}
+
+SWIFT_RUNTIME_EXPORT
+extern "C"
+void swift_getFieldName(intptr_t i,
+                        const Metadata *T,
+                        String *outString) {
+  auto kind = T->getKind();
+  switch (kind) {
+    case MetadataKind::Struct: {
+      auto structMetadata = static_cast<const StructMetadata*>(T);
+      if (i < 0 || (size_t)i > structMetadata->Description->Struct.NumFields)
+        swift::crash("Swift mirror subscript bounds check failure");
+      new (outString) String(getFieldName(structMetadata->Description->Struct.FieldNames, i));
+      return;
+    }
+    case MetadataKind::Enum: {
+      const auto enumMetadata = static_cast<const EnumMetadata *>(T);
+      const auto &Description = enumMetadata->Description->Enum;
+      if (i < 0 || (size_t)i > Description.getNumCases())
+        swift::crash("Swift mirror subscript bounds check failure");
+      new (outString) String(getFieldName(Description.CaseNames, i));
+      return;
+    }
+    case MetadataKind::Class: {
+      auto classMetadata = static_cast<const ClassMetadata*>(T);
+      if (i < 0 || (size_t)i > classMetadata->getDescription()->Class.NumFields)
+        swift::crash("Swift mirror subscript bounds check failure");
+      new (outString) String(getFieldName(classMetadata->getDescription()->Class.FieldNames, i));
+      return;
+    }
+    default:
+      swift::crash("Invalid metatype passed into swift_getFieldName");
+      return;
+  }
+}
+
 // NB: This function is not used directly in the Swift codebase, but is
 // exported for Xcode support and is used by the sanitizers. Please coordinate
 // before changing.

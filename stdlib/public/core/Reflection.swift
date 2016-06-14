@@ -636,3 +636,44 @@ extension ObjectIdentifier {
     Builtin.unreachable()
   }
 }
+
+// prototype
+@_silgen_name("swift_getNominalTypeKind")
+public func getNominalTypeKind(_ x: Any.Type) -> Int
+
+@_silgen_name("swift_getNominalTypeFieldCount")
+public func getNominalTypeFieldCount(_ x: Any.Type) -> Int
+
+@_silgen_name("swift_getFieldName")
+public func getFieldFor(index: Int, _ x: Any.Type, _ result: UnsafeMutablePointer<String>)
+
+public struct NominalTypeMirror {
+  public enum Kind {
+    case Struct, Class, Enum
+  }
+
+  public let metatype: Any.Type
+  public let count: Int
+  public let kind: NominalTypeMirror.Kind
+
+  public subscript(i: Int) -> String {
+    _precondition(i >= 0)
+    _precondition(i < count)
+    let (_, result) = _withUninitializedString {
+      getFieldFor(index: i, self.metatype, $0)
+    }
+    return result
+  }
+
+  public init(reflecting type: Any.Type) {
+    metatype = type
+    count = getNominalTypeFieldCount(type)
+    switch getNominalTypeKind(type) {
+    case 1: kind = .Struct
+    case 2: kind = .Enum
+    case 3: kind = .Class
+    default: 
+      fatalError("Precondition failure")
+    }
+  }
+}
