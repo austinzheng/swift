@@ -639,13 +639,16 @@ extension ObjectIdentifier {
 
 // prototype
 @_silgen_name("swift_getNominalTypeKind")
-public func getNominalTypeKind(_ x: Any.Type) -> Int
+func getNominalTypeKind(_ x: Any.Type) -> Int
 
 @_silgen_name("swift_getNominalTypeFieldCount")
-public func getNominalTypeFieldCount(_ x: Any.Type) -> Int
+func getNominalTypeFieldCount(_ x: Any.Type) -> Int
 
 @_silgen_name("swift_getFieldName")
-public func getFieldFor(index: Int, _ x: Any.Type, _ result: UnsafeMutablePointer<String>)
+func getFieldFor(index: Int, _ x: Any.Type, _ result: UnsafeMutablePointer<String>)
+
+@_silgen_name("swift_getSuperclass")
+func getSuperclassFor(_ x: Any.Type) -> Any.Type
 
 public struct NominalTypeMirror {
   public enum Kind {
@@ -655,6 +658,18 @@ public struct NominalTypeMirror {
   public let metatype: Any.Type
   public let count: Int
   public let kind: NominalTypeMirror.Kind
+
+  public func superclassMirror() -> NominalTypeMirror? {
+    guard kind == .Class else {
+      return nil
+    }
+    let superclass = getSuperclassFor(metatype)
+    if "\(superclass)" == "SwiftObject" {
+      // TODO: this is a terrible hack
+      return nil
+    }
+    return NominalTypeMirror(reflecting: superclass)
+  }
 
   public subscript(i: Int) -> String {
     _precondition(i >= 0)

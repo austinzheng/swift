@@ -1194,8 +1194,26 @@ MirrorReturn swift::swift_reflectAny(OpaqueValue *value, const Metadata *T) {
   return MirrorReturn(result);
 }
 
+// prototype
+SWIFT_RUNTIME_EXPORT
+extern "C"
+const Metadata *swift_getSuperclass(const Metadata *T) {
+  auto kind = T->getKind();  switch (kind) {
+    case MetadataKind::Class: {
+      auto classMetadata = static_cast<const ClassMetadata*>(T);
+      auto superclassMetadata = static_cast<const ClassMetadata*>(classMetadata->SuperClass);
+      if (superclassMetadata == nullptr) {
+        return nullptr;
+      } else {
+        return static_cast<const Metadata*>(superclassMetadata);
+      }
+    }
+    default:
+      swift::crash("Non-class metatype passed into swift_getSuperclass()");
+      return nullptr;
+  }
+}
 
-// AZ: TODO
 SWIFT_RUNTIME_EXPORT
 extern "C"
 intptr_t swift_getNominalTypeFieldCount(const Metadata *T) {
